@@ -2,7 +2,11 @@
 """
 해외주식 뉴스 자동 전송 스케줄러
 - 오전 7시 (한국시간): 미국 장 마감 후 뉴스
-- 오후 11시 (한국시간): 미국 장 시작 전후 뉴스
+- 오후 10시 30분 (한국시간): 미국 장 시작 전후 뉴스
+
+섬머타임 자동 반영:
+- 섬머타임(3-11월): 한국 시간 - 13시간 = 미국 동부
+- 동절기(11-3월): 한국 시간 - 14시간 = 미국 동부
 """
 
 import schedule
@@ -23,10 +27,10 @@ OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 HEADER_IMAGE_URL = os.getenv('HEADER_IMAGE_URL')
 
 def send_morning_news():
-    """오전 7시 - 미국 장 마감 후 뉴스 (미국 동부 오후 5-6시)"""
+    """오전 7시 (KST) - 미국 장 마감 후 뉴스"""
     print(f"\n{'='*60}")
-    print(f"🌅 오전 7시 미국주식 모닝브리프 전송 시작")
-    print(f"   시각: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"☀️ 오전 7시 미국주식 모닝브리프 전송 시작")
+    print(f"   시각: {datetime.now().strftime('%Y-%m-%d %H:%M:%S KST')}")
     print(f"   내용: 미국 장 마감 후 주요 뉴스")
     print(f"{'='*60}\n")
     
@@ -42,10 +46,10 @@ def send_morning_news():
     print("✅ 모닝브리프 전송 완료\n")
 
 def send_evening_news():
-    """오후 11시 - 미국 장 시작 전후 뉴스 (미국 동부 오전 9-10시)"""
+    """오후 10시 30분 (KST) - 미국 장 시작 전후 뉴스"""
     print(f"\n{'='*60}")
-    print(f"🌙 오후 11시 미국주식 이브닝브리프 전송 시작")
-    print(f"   시각: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"🌙 오후 10시 30분 미국주식 이브닝브리프 전송 시작")
+    print(f"   시각: {datetime.now().strftime('%Y-%m-%d %H:%M:%S KST')}")
     print(f"   내용: 미국 장 시작 전후 주요 뉴스")
     print(f"{'='*60}\n")
     
@@ -74,15 +78,17 @@ def main():
         sys.exit(1)
     
     print("🤖 해외주식 뉴스 봇 스케줄러 시작")
-    print(f"⏰ 예정된 전송 시간:")
-    print(f"   - 오전 7시 (KST): 미국 장 마감 후 뉴스")
-    print(f"   - 오후 11시 (KST): 미국 장 시작 전후 뉴스")
-    print(f"\n현재 시각: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"⏰ 예정된 전송 시간 (한국시간 기준):")
+    print(f"   - 오전 7시: 미국 장 마감 후 뉴스")
+    print(f"     (미국 동부: 섬머타임 시 오후 6시 / 동절기 시 오후 5시)")
+    print(f"   - 오후 10시 30분: 미국 장 시작 전후 뉴스")
+    print(f"     (미국 동부: 섬머타임 시 오전 9시 30분 / 동절기 시 오전 8시 30분)")
+    print(f"\n현재 시각: {datetime.now().strftime('%Y-%m-%d %H:%M:%S KST')}")
     print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
     
-    # 스케줄 등록
+    # 스케줄 등록 - 한국시간 기준
     schedule.every().day.at("07:00").do(send_morning_news)
-    schedule.every().day.at("23:00").do(send_evening_news)
+    schedule.every().day.at("22:30").do(send_evening_news)
     
     print("✅ 스케줄 등록 완료. 대기 중...\n")
     
