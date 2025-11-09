@@ -247,7 +247,8 @@ _한 달간 가장 중요했던 이슈_
             info_parts.append(f"종목: {escape_markdown(tickers_str)}")
         
         if info_parts:
-            message += f"_{' \\| '.join(info_parts)}_\n"
+            separator = ' \\| '
+            message += f"_{separator.join(info_parts)}_\n"
         
         if outlook:
             message += f"💡 _{escape_markdown(outlook)}_\n"
