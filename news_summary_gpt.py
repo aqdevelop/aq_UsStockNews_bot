@@ -23,17 +23,12 @@ class USStockNewsSummary:
         self.openai_api_key = openai_api_key
         self.news_priority = news_priority  # 'general', 'tech', 'macro' 등
         
-        # 전송 기록 파일 경로 - Railway Volume 사용
-        volume_path = '/data/sent_news_history.json'
-        local_path = 'sent_news_history.json'
+        # 전송 기록 파일 경로 - Railway Volume 필수 사용
+        self.sent_news_file = '/data/sent_news_history.json'
+        print(f"📁 데이터 저장 경로: {self.sent_news_file}")
         
-        # /data 디렉토리가 있으면 Volume 사용, 없으면 로컬 사용
-        if os.path.exists('/data'):
-            self.sent_news_file = volume_path
-            print("📁 Railway Volume 사용: /data/sent_news_history.json")
-        else:
-            self.sent_news_file = local_path
-            print("📁 로컬 파일 사용: sent_news_history.json")
+        # /data 디렉토리가 없으면 생성
+        os.makedirs('/data', exist_ok=True)
         
         # 해외주식 RSS 피드 소스
         self.rss_feeds = {
