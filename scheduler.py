@@ -23,9 +23,9 @@ from news_summary_gpt import USStockNewsSummary
 from weekly_hot_analyzer import WeeklyHotNewsAnalyzer
 from monthly_hot_analyzer import MonthlyHotNewsAnalyzer
 
-# 환경 변수 로드
+# 환경 변수 로드 (하위 호환성 지원)
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
-TELEGRAM_CHAT_IDS = os.getenv('TELEGRAM_CHAT_IDS')
+TELEGRAM_CHAT_IDS = os.getenv('TELEGRAM_CHAT_IDS') or os.getenv('TELEGRAM_CHAT_ID')  # 하위 호환
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 HEADER_IMAGE_URL = os.getenv('HEADER_IMAGE_URL')
 
@@ -364,6 +364,7 @@ def main():
         print("\n다음 환경 변수를 설정해주세요:")
         print("  - TELEGRAM_BOT_TOKEN")
         print("  - TELEGRAM_CHAT_IDS (콤마로 구분, 예: -1001234567890,-1009876543210)")
+        print("    또는 TELEGRAM_CHAT_ID (단일 채팅방, 하위 호환)")
         print("  - OPENAI_API_KEY")
         print("  - HEADER_IMAGE_URL (선택사항)")
         print("  - REDDIT_CLIENT_ID (선택사항, 주간 핫 뉴스용)")

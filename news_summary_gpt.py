@@ -631,7 +631,7 @@ _{subheader}_
 def main():
     """메인 실행 함수"""
     telegram_token = os.getenv('TELEGRAM_BOT_TOKEN')
-    telegram_chat_ids = os.getenv('TELEGRAM_CHAT_IDS')
+    telegram_chat_ids = os.getenv('TELEGRAM_CHAT_IDS') or os.getenv('TELEGRAM_CHAT_ID')  # 하위 호환성
     openai_api_key = os.getenv('OPENAI_API_KEY')
     header_image_url = os.getenv('HEADER_IMAGE_URL')
     
@@ -640,6 +640,7 @@ def main():
         print("\n다음 환경 변수를 설정해주세요:")
         print("  - TELEGRAM_BOT_TOKEN")
         print("  - TELEGRAM_CHAT_IDS (콤마로 구분, 예: -1001234567890,-1009876543210)")
+        print("    또는 TELEGRAM_CHAT_ID (단일 채팅방, 하위 호환)")
         print("  - OPENAI_API_KEY")
         print("  - HEADER_IMAGE_URL (선택사항)")
         return
