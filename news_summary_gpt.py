@@ -17,11 +17,14 @@ sys.stdout.reconfigure(line_buffering=True)
 sys.stderr.reconfigure(line_buffering=True)
 
 class USStockNewsSummary:
-    def __init__(self, telegram_token: str, telegram_chat_id: str, openai_api_key: str, news_priority: str = 'general'):
+    def __init__(self, telegram_token: str, telegram_chat_ids: str, openai_api_key: str, news_priority: str = 'general'):
         self.telegram_token = telegram_token
-        self.telegram_chat_id = telegram_chat_id
+        # 콤마로 구분된 여러 chat_id 지원
+        self.telegram_chat_ids = [cid.strip() for cid in telegram_chat_ids.split(',') if cid.strip()]
         self.openai_api_key = openai_api_key
         self.news_priority = news_priority  # 'general', 'tech', 'macro' 등
+        
+        print(f"📢 전송 대상 채팅방: {len(self.telegram_chat_ids)}개")
         
         # 전송 기록 파일 경로 - Railway Volume 필수 사용
         self.sent_news_file = '/data/sent_news_history.json'
@@ -471,89 +474,118 @@ _{subheader}_
         return message
     
     def send_telegram_message(self, message: str, photo_url: str = None):
-        """텔레그램으로 메시지 전송 (이미지 포함 가능)"""
+        """텔레그램으로 메시지 전송 (여러 채팅방 지원)"""
+        import time
         
-        # 1. 이미지가 있으면 이미지 + 텍스트를 한 메시지로 전송
-        if photo_url:
-            print(f"📸 헤더 이미지 + 뉴스 통합 전송 시도: {photo_url[:50]}...")
+        success_count = 0
+        fail_count = 0
+        
+        for chat_idx, chat_id in enumerate(self.telegram_chat_ids, 1):
+            print(f"\n📤 [{chat_idx}/{len(self.telegram_chat_ids)}] 채팅방 {chat_id}에 전송 중...")
             
-            photo_url_api = f"https://api.telegram.org/bot{self.telegram_token}/sendPhoto"
+            # 1. 이미지가 있으면 이미지 + 텍스트를 한 메시지로 전송
+            if photo_url:
+                print(f"📸 헤더 이미지 + 뉴스 통합 전송 시도: {photo_url[:50]}...")
+                
+                photo_url_api = f"https://api.telegram.org/bot{self.telegram_token}/sendPhoto"
+                
+                max_caption_length = 1000
+                
+                if len(message) <= max_caption_length:
+                    # 짧으면 한 번에 전송
+                    if photo_url.startswith('http'):
+                        photo_payload = {
+                            'chat_id': chat_id,
+                            'photo': photo_url,
+                            'caption': message,
+                            'parse_mode': 'MarkdownV2',
+                            'disable_web_page_preview': True
+                        }
+                    else:
+                        photo_payload = {
+                            'chat_id': chat_id,
+                            'photo': photo_url,
+                            'caption': message,
+                            'parse_mode': 'MarkdownV2',
+                            'disable_web_page_preview': True
+                        }
+                    
+                    try:
+                        response = requests.post(photo_url_api, json=photo_payload, timeout=30)
+                        
+                        if response.status_code == 200:
+                            print(f"✅ 채팅방 {chat_id}: 이미지 + 뉴스 통합 전송 성공")
+                            success_count += 1
+                            # 다음 채팅방 전송 전 대기 (API 제한 방지)
+                            if chat_idx < len(self.telegram_chat_ids):
+                                time.sleep(1)
+                            continue
+                        else:
+                            print(f"⚠️ 채팅방 {chat_id}: 통합 전송 실패 - {response.text}")
+                            
+                    except Exception as e:
+                        print(f"⚠️ 채팅방 {chat_id}: 통합 전송 오류 - {e}")
             
-            max_caption_length = 1000
+            # 2. 텍스트 메시지 전송
+            url = f"https://api.telegram.org/bot{self.telegram_token}/sendMessage"
             
-            if len(message) <= max_caption_length:
-                # 짧으면 한 번에 전송
-                if photo_url.startswith('http'):
-                    photo_payload = {
-                        'chat_id': self.telegram_chat_id,
-                        'photo': photo_url,
-                        'caption': message,
-                        'parse_mode': 'MarkdownV2',
-                        'disable_web_page_preview': True
-                    }
-                else:
-                    photo_payload = {
-                        'chat_id': self.telegram_chat_id,
-                        'photo': photo_url,
-                        'caption': message,
-                        'parse_mode': 'MarkdownV2',
-                        'disable_web_page_preview': True
-                    }
+            if photo_url and len(message) <= 1000:
+                continue
+            
+            # 메시지가 너무 길면 분할 (4096자 제한)
+            max_length = 4000
+            
+            if len(message) <= max_length:
+                messages = [message]
+            else:
+                parts = message.split('\n\n')
+                messages = []
+                current = parts[0] + "\n\n"
+                
+                for part in parts[1:]:
+                    if len(current) + len(part) < max_length:
+                        current += part + "\n\n"
+                    else:
+                        messages.append(current)
+                        current = part + "\n\n"
+                
+                if current:
+                    messages.append(current)
+            
+            chat_success = True
+            for idx, msg in enumerate(messages):
+                payload = {
+                    'chat_id': chat_id,
+                    'text': msg,
+                    'parse_mode': 'MarkdownV2',
+                    'disable_web_page_preview': True
+                }
                 
                 try:
-                    response = requests.post(photo_url_api, json=photo_payload, timeout=30)
-                    
+                    response = requests.post(url, json=payload, timeout=10)
                     if response.status_code == 200:
-                        print("✅ 이미지 + 뉴스 통합 전송 성공")
-                        return
+                        print(f"✅ 채팅방 {chat_id}: 메시지 {idx+1}/{len(messages)} 전송 성공")
                     else:
-                        print(f"⚠️ 통합 전송 실패: {response.text}")
-                        
+                        print(f"❌ 채팅방 {chat_id}: 전송 실패 - {response.text}")
+                        chat_success = False
                 except Exception as e:
-                    print(f"⚠️ 통합 전송 오류: {e}")
-        
-        # 2. 텍스트 메시지 전송
-        url = f"https://api.telegram.org/bot{self.telegram_token}/sendMessage"
-        
-        if photo_url and len(message) <= 1000:
-            return
-        
-        # 메시지가 너무 길면 분할 (4096자 제한)
-        max_length = 4000
-        
-        if len(message) <= max_length:
-            messages = [message]
-        else:
-            parts = message.split('\n\n')
-            messages = []
-            current = parts[0] + "\n\n"
+                    print(f"❌ 채팅방 {chat_id}: 전송 오류 - {e}")
+                    chat_success = False
+                
+                # 분할 메시지 간 짧은 대기
+                if idx < len(messages) - 1:
+                    time.sleep(0.5)
             
-            for part in parts[1:]:
-                if len(current) + len(part) < max_length:
-                    current += part + "\n\n"
-                else:
-                    messages.append(current)
-                    current = part + "\n\n"
+            if chat_success:
+                success_count += 1
+            else:
+                fail_count += 1
             
-            if current:
-                messages.append(current)
+            # 다음 채팅방 전송 전 대기 (API 제한 방지)
+            if chat_idx < len(self.telegram_chat_ids):
+                time.sleep(5)  # 채팅방 간 5초 간격
         
-        for idx, msg in enumerate(messages):
-            payload = {
-                'chat_id': self.telegram_chat_id,
-                'text': msg,
-                'parse_mode': 'MarkdownV2',
-                'disable_web_page_preview': True
-            }
-            
-            try:
-                response = requests.post(url, json=payload, timeout=10)
-                if response.status_code == 200:
-                    print(f"✅ 메시지 {idx+1}/{len(messages)} 전송 성공")
-                else:
-                    print(f"❌ 전송 실패: {response.text}")
-            except Exception as e:
-                print(f"❌ 전송 오류: {e}")
+        print(f"\n📊 전송 결과: 성공 {success_count}개, 실패 {fail_count}개 (총 {len(self.telegram_chat_ids)}개 채팅방)")
     
     def run(self, hours: int = 12, top_n: int = 10, header_image_url: str = None, time_of_day: str = None):
         """실행
@@ -599,22 +631,22 @@ _{subheader}_
 def main():
     """메인 실행 함수"""
     telegram_token = os.getenv('TELEGRAM_BOT_TOKEN')
-    telegram_chat_id = os.getenv('TELEGRAM_CHAT_ID')
+    telegram_chat_ids = os.getenv('TELEGRAM_CHAT_IDS')
     openai_api_key = os.getenv('OPENAI_API_KEY')
     header_image_url = os.getenv('HEADER_IMAGE_URL')
     
-    if not all([telegram_token, telegram_chat_id, openai_api_key]):
+    if not all([telegram_token, telegram_chat_ids, openai_api_key]):
         print("❌ 오류: 필요한 환경 변수가 설정되지 않았습니다.")
         print("\n다음 환경 변수를 설정해주세요:")
         print("  - TELEGRAM_BOT_TOKEN")
-        print("  - TELEGRAM_CHAT_ID")
+        print("  - TELEGRAM_CHAT_IDS (콤마로 구분, 예: -1001234567890,-1009876543210)")
         print("  - OPENAI_API_KEY")
         print("  - HEADER_IMAGE_URL (선택사항)")
         return
     
     bot = USStockNewsSummary(
         telegram_token=telegram_token,
-        telegram_chat_id=telegram_chat_id,
+        telegram_chat_ids=telegram_chat_ids,
         openai_api_key=openai_api_key
     )
     

@@ -9,6 +9,7 @@ GPT-4o-mini를 활용한 해외주식 뉴스 자동 수집 및 요약 봇입니�
 - **GPT 기반 선별**: 투자자에게 중요한 뉴스만 자동 선별
 - **한국어 요약**: 영문 뉴스를 한국어로 2-3문장 요약
 - **중복 제거**: GPT 기반 유사 주제 필터링
+- **🔔 여러 채팅방 지원**: 한 번에 여러 텔레그램 채팅방으로 동시 전송 가능
 - **스케줄 전송**: 
   - **평일**: 오전 7시, 오후 10시 30분 (하루 2회)
   - **토요일**: 오전 7시만 (하루 1회)
@@ -104,12 +105,24 @@ GPT-4o-mini를 활용한 해외주식 뉴스 자동 수집 및 요약 봇입니�
 
 ### 2. Chat ID 확인
 
+#### 단일 채팅방
 1. 봇에게 아무 메시지나 전송
 2. 브라우저에서 다음 URL 접속:
    ```
    https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getUpdates
    ```
 3. `"chat":{"id":` 뒤의 숫자가 **Chat ID**
+
+#### 여러 채팅방 (콤마로 구분)
+- 여러 개의 Chat ID를 콤마로 구분하여 입력
+- 예시: `-1001234567890,-1009876543210,-1008765432109`
+- 각 Chat ID는 봇이 멤버로 등록되어 있어야 함
+
+> 💡 **그룹 채팅방 Chat ID 확인 방법**:
+> 1. 봇을 그룹에 추가
+> 2. 그룹에서 봇에게 아무 메시지나 전송 (예: `/start`)
+> 3. `https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getUpdates` 접속
+> 4. 그룹의 Chat ID는 `-100`으로 시작하는 음수 형태
 
 ### 3. OpenAI API 키 발급
 
@@ -139,13 +152,24 @@ Reddit r/wallstreetbets 데이터를 활용하려면:
 3. 환경 변수 설정:
    ```
    TELEGRAM_BOT_TOKEN=your_token_here
-   TELEGRAM_CHAT_ID=your_chat_id_here
+   TELEGRAM_CHAT_IDS=your_chat_id_here  (여러 개는 콤마로 구분)
    OPENAI_API_KEY=your_openai_key_here
    HEADER_IMAGE_URL=  (선택사항)
    REDDIT_CLIENT_ID=  (선택사항, 주간 핫 뉴스용)
    REDDIT_CLIENT_SECRET=  (선택사항, 주간 핫 뉴스용)
    ```
-4. Deploy 완료 후 자동 실행
+   
+   예시 (여러 채팅방):
+   ```
+   TELEGRAM_CHAT_IDS=-1001234567890,-1009876543210,-1008765432109
+   ```
+
+4. Deploy 완료 후 **즉시 12시간 뉴스 전송** (테스트)
+5. 테스트 완료 후 정기 스케줄 자동 시작
+
+> 💡 **배포 시 자동 테스트**: Railway에 배포하면 즉시 최근 12시간 뉴스를 분석하여 모든 채팅방에 전송합니다. 이를 통해 설정이 올바른지 바로 확인할 수 있습니다!
+
+> ⏱️ **채팅방 간격**: 여러 채팅방에 전송할 때 각 채팅방 사이에 5초 간격을 두어 안정적으로 전송합니다.
 
 ### 6. Railway Volume 설정 (권장)
 

@@ -25,7 +25,7 @@ from monthly_hot_analyzer import MonthlyHotNewsAnalyzer
 
 # 환경 변수 로드
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
-TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
+TELEGRAM_CHAT_IDS = os.getenv('TELEGRAM_CHAT_IDS')
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 HEADER_IMAGE_URL = os.getenv('HEADER_IMAGE_URL')
 
@@ -57,7 +57,7 @@ def send_morning_news():
     
     bot = USStockNewsSummary(
         telegram_token=TELEGRAM_TOKEN,
-        telegram_chat_id=TELEGRAM_CHAT_ID,
+        telegram_chat_ids=TELEGRAM_CHAT_IDS,
         openai_api_key=OPENAI_API_KEY,
         news_priority='general'
     )
@@ -97,7 +97,7 @@ def send_evening_news():
     
     bot = USStockNewsSummary(
         telegram_token=TELEGRAM_TOKEN,
-        telegram_chat_id=TELEGRAM_CHAT_ID,
+        telegram_chat_ids=TELEGRAM_CHAT_IDS,
         openai_api_key=OPENAI_API_KEY,
         news_priority='general'
     )
@@ -168,23 +168,41 @@ _한 주간 가장 화제였던 이슈_
 해외주식 소식 자동 포워딩 문의👇
 📧 contact@aqresearch\\.com"""
     
-    # 텔레그램 전송
+    # 여러 채팅방에 전송
+    chat_ids = [cid.strip() for cid in TELEGRAM_CHAT_IDS.split(',') if cid.strip()]
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-    payload = {
-        'chat_id': TELEGRAM_CHAT_ID,
-        'text': message,
-        'parse_mode': 'MarkdownV2',
-        'disable_web_page_preview': True
-    }
     
-    try:
-        response = requests.post(url, json=payload, timeout=10)
-        if response.status_code == 200:
-            print(f"✅ 주간 핫 뉴스 전송 완료\n")
-        else:
-            print(f"❌ 전송 실패: {response.text}\n")
-    except Exception as e:
-        print(f"❌ 전송 오류: {e}\n")
+    success_count = 0
+    fail_count = 0
+    
+    for chat_idx, chat_id in enumerate(chat_ids, 1):
+        print(f"📤 [{chat_idx}/{len(chat_ids)}] 채팅방 {chat_id}에 주간 핫 뉴스 전송 중...")
+        
+        payload = {
+            'chat_id': chat_id,
+            'text': message,
+            'parse_mode': 'MarkdownV2',
+            'disable_web_page_preview': True
+        }
+        
+        try:
+            response = requests.post(url, json=payload, timeout=10)
+            if response.status_code == 200:
+                print(f"✅ 채팅방 {chat_id}: 주간 핫 뉴스 전송 완료")
+                success_count += 1
+            else:
+                print(f"❌ 채팅방 {chat_id}: 전송 실패 - {response.text}")
+                fail_count += 1
+        except Exception as e:
+            print(f"❌ 채팅방 {chat_id}: 전송 오류 - {e}")
+            fail_count += 1
+        
+        # 다음 채팅방 전송 전 대기
+        if chat_idx < len(chat_ids):
+            time.sleep(5)  # 채팅방 간 5초 간격
+    
+    print(f"\n📊 주간 핫 뉴스 전송 결과: 성공 {success_count}개, 실패 {fail_count}개\n")
+
 
 def send_monthly_hot_news():
     """월간 핫 뉴스 TOP 10 (매월 1일 오전 7시 직후)"""
@@ -263,7 +281,8 @@ _한 달간 가장 중요했던 이슈_
 해외주식 소식 자동 포워딩 문의👇
 📧 contact@aqresearch\\.com"""
     
-    # 텔레그램 전송
+    # 여러 채팅방에 전송
+    chat_ids = [cid.strip() for cid in TELEGRAM_CHAT_IDS.split(',') if cid.strip()]
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     
     # 메시지가 너무 길면 분할
@@ -291,39 +310,60 @@ _한 달간 가장 중요했던 이슈_
         if current != header:
             messages.append(current + footer)
     
-    # 전송
-    for idx, msg in enumerate(messages):
-        payload = {
-            'chat_id': TELEGRAM_CHAT_ID,
-            'text': msg,
-            'parse_mode': 'MarkdownV2',
-            'disable_web_page_preview': True
-        }
-        
-        try:
-            response = requests.post(url, json=payload, timeout=10)
-            if response.status_code == 200:
-                print(f"✅ 월간 핫 뉴스 {idx+1}/{len(messages)} 전송 완료")
-            else:
-                print(f"❌ 전송 실패: {response.text}")
-        except Exception as e:
-            print(f"❌ 전송 오류: {e}")
-        
-        # 여러 메시지 전송 시 간격
-        if idx < len(messages) - 1:
-            time.sleep(2)
+    # 모든 채팅방에 전송
+    total_success = 0
+    total_fail = 0
     
-    print()
+    for chat_idx, chat_id in enumerate(chat_ids, 1):
+        print(f"\n📤 [{chat_idx}/{len(chat_ids)}] 채팅방 {chat_id}에 월간 핫 뉴스 전송 중...")
+        
+        chat_success = 0
+        chat_fail = 0
+        
+        for idx, msg in enumerate(messages):
+            payload = {
+                'chat_id': chat_id,
+                'text': msg,
+                'parse_mode': 'MarkdownV2',
+                'disable_web_page_preview': True
+            }
+            
+            try:
+                response = requests.post(url, json=payload, timeout=10)
+                if response.status_code == 200:
+                    print(f"✅ 채팅방 {chat_id}: 월간 핫 뉴스 {idx+1}/{len(messages)} 전송 완료")
+                    chat_success += 1
+                else:
+                    print(f"❌ 채팅방 {chat_id}: 전송 실패 - {response.text}")
+                    chat_fail += 1
+            except Exception as e:
+                print(f"❌ 채팅방 {chat_id}: 전송 오류 - {e}")
+                chat_fail += 1
+            
+            # 여러 메시지 전송 시 간격
+            if idx < len(messages) - 1:
+                time.sleep(2)
+        
+        if chat_fail == 0:
+            total_success += 1
+        else:
+            total_fail += 1
+        
+        # 다음 채팅방 전송 전 대기
+        if chat_idx < len(chat_ids):
+            time.sleep(5)  # 채팅방 간 5초 간격
+    
+    print(f"\n📊 월간 핫 뉴스 전송 결과: 성공 {total_success}개, 실패 {total_fail}개 (총 {len(chat_ids)}개 채팅방)\n")
 
 def main():
     """스케줄러 메인"""
     
     # 환경 변수 확인
-    if not all([TELEGRAM_TOKEN, TELEGRAM_CHAT_ID, OPENAI_API_KEY]):
+    if not all([TELEGRAM_TOKEN, TELEGRAM_CHAT_IDS, OPENAI_API_KEY]):
         print("❌ 오류: 필요한 환경 변수가 설정되지 않았습니다.")
         print("\n다음 환경 변수를 설정해주세요:")
         print("  - TELEGRAM_BOT_TOKEN")
-        print("  - TELEGRAM_CHAT_ID")
+        print("  - TELEGRAM_CHAT_IDS (콤마로 구분, 예: -1001234567890,-1009876543210)")
         print("  - OPENAI_API_KEY")
         print("  - HEADER_IMAGE_URL (선택사항)")
         print("  - REDDIT_CLIENT_ID (선택사항, 주간 핫 뉴스용)")
