@@ -413,6 +413,7 @@ JSON만 출력하세요."""
     
     def format_summary_message(self, news_list: List[Dict], time_of_day: str = None) -> str:
         """텔레그램 메시지 포맷 (MarkdownV2)"""
+        from datetime import timezone, timedelta
         
         def escape_markdown(text: str) -> str:
             """MarkdownV2 특수문자 이스케이프"""
@@ -434,12 +435,33 @@ JSON만 출력하세요."""
             header = "🌙 *미국주식 이브닝브리프*"
             subheader = "미국 장 시작 전후 주요 뉴스"
         
-        today = datetime.now().strftime('%Y\\-%m\\-%d %H:%M KST')
+        # 한국 시간 (KST = UTC+9)
+        kst = timezone(timedelta(hours=9))
+        now_kst = datetime.now(kst)
+        kst_time = now_kst.strftime('%Y\\-%m\\-%d %H:%M')
+        
+        # 미국 동부 시간 (EST/EDT)
+        # 11월 첫째 일요일 ~ 3월 둘째 일요일: EST (UTC-5)
+        # 3월 둘째 일요일 ~ 11월 첫째 일요일: EDT (UTC-4)
+        # 간단하게 3-10월은 EDT, 11-2월은 EST로 처리
+        month = now_kst.month
+        if 3 <= month <= 10:
+            # 섬머타임 (EDT = UTC-4)
+            us_offset = timedelta(hours=-4)
+            us_tz_name = "EDT"
+        else:
+            # 동절기 (EST = UTC-5)
+            us_offset = timedelta(hours=-5)
+            us_tz_name = "EST"
+        
+        us_et = timezone(us_offset)
+        now_us = now_kst.astimezone(us_et)
+        us_time = now_us.strftime('%H:%M')
         
         message = f"""{header}
 _{subheader}_
 
-📅 {today}
+📅 {kst_time} KST \\| {escape_markdown(us_time)} {escape_markdown(us_tz_name)}
 
 ━━━━━━━━━━━━━━━━━━━━
 
