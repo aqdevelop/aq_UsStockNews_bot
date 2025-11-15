@@ -28,6 +28,10 @@ TELEGRAM_CHAT_IDS = os.getenv('TELEGRAM_CHAT_IDS') or os.getenv('TELEGRAM_CHAT_I
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 HEADER_IMAGE_URL = os.getenv('HEADER_IMAGE_URL')
 
+# 송출 시간 설정 (환경 변수 또는 기본값)
+MORNING_TIME = os.getenv('MORNING_TIME', '08:00')  # 기본: 오전 8시
+EVENING_TIME = os.getenv('EVENING_TIME', '22:00')  # 기본: 오후 10시
+
 def is_weekend():
     """주말(토요일, 일요일) 확인"""
     return datetime.now().weekday() >= 5  # 5=토요일, 6=일요일
@@ -41,9 +45,9 @@ def is_first_of_month():
     return datetime.now().day == 1
 
 def send_morning_news():
-    """오전 8시 (KST) - 모닝브리프"""
+    """모닝브리프 전송"""
     print(f"\n{'='*60}")
-    print(f"☀️ 오전 8시 미국주식 모닝브리프 전송 시작")
+    print(f"☀️ 모닝브리프 전송 시작 (설정: {MORNING_TIME})")
     print(f"   시각: {datetime.now().strftime('%Y-%m-%d %H:%M:%S KST')}")
     print(f"   내용: 미국 장 마감 후 주요 뉴스")
     print(f"{'='*60}\n")
@@ -72,9 +76,9 @@ def send_morning_news():
         send_monthly_hot_news()
 
 def send_evening_news():
-    """오후 10시 (KST) - 이브닝브리프"""
+    """이브닝브리프 전송"""
     print(f"\n{'='*60}")
-    print(f"🌙 오후 10시 미국주식 이브닝브리프 전송 시작")
+    print(f"🌙 이브닝브리프 전송 시작 (설정: {EVENING_TIME})")
     print(f"   시각: {datetime.now().strftime('%Y-%m-%d %H:%M:%S KST')}")
     print(f"   내용: 미국 장 시작 전후 주요 뉴스")
     print(f"{'='*60}\n")
@@ -358,12 +362,12 @@ def main():
     print("🤖 해외주식 뉴스 봇 스케줄러 시작")
     print(f"⏰ 예정된 전송 시간 (한국시간 KST 고정):")
     print(f"   📅 매일:")
-    print(f"      - 오전 8시: 모닝브리프 (미국 장 마감 후 뉴스)")
-    print(f"      - 오후 10시: 이브닝브리프 (미국 장 시작 전후 뉴스)")
+    print(f"      - {MORNING_TIME}: 모닝브리프 (미국 장 마감 후 뉴스)")
+    print(f"      - {EVENING_TIME}: 이브닝브리프 (미국 장 시작 전후 뉴스)")
     print(f"   📅 일요일 추가:")
-    print(f"      - 오전 8시 직후: 🔥 주간 핫 TOP 10 (GPT-4o)")
+    print(f"      - {MORNING_TIME} 직후: 🔥 주간 핫 TOP 10 (GPT-4o)")
     print(f"   📅 매월 1일 추가:")
-    print(f"      - 오전 8시 직후: 📅 월간 핫 TOP 10 (GPT-4o)")
+    print(f"      - {MORNING_TIME} 직후: 📅 월간 핫 TOP 10 (GPT-4o)")
     print(f"\n현재 시각: {datetime.now().strftime('%Y-%m-%d %H:%M:%S KST')}")
     print(f"오늘: {['월요일', '화요일', '수요일', '목요일', '금요일', '토요일', '일요일'][datetime.now().weekday()]}")
     print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
@@ -378,11 +382,9 @@ def main():
     print()
     
     # 스케줄 등록 - 한국시간(KST) 고정
-    # 매일 오전 8시 (모닝브리프)
-    schedule.every().day.at("08:00").do(send_morning_news)
-    
-    # 매일 오후 10시 (이브닝브리프)
-    schedule.every().day.at("22:00").do(send_evening_news)
+    # 환경 변수로 설정 가능 (기본값: 오전 8시, 오후 10시)
+    schedule.every().day.at(MORNING_TIME).do(send_morning_news)
+    schedule.every().day.at(EVENING_TIME).do(send_evening_news)
     
     print("✅ 스케줄 등록 완료. 대기 중...\n")
     

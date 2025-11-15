@@ -144,6 +144,8 @@ Reddit r/wallstreetbets 데이터를 활용하려면:
    TELEGRAM_CHAT_IDS=your_chat_id_here  (여러 개는 콤마로 구분)
    OPENAI_API_KEY=your_openai_key_here
    HEADER_IMAGE_URL=  (선택사항)
+   MORNING_TIME=08:00  (선택사항, 기본값: 08:00)
+   EVENING_TIME=22:00  (선택사항, 기본값: 22:00)
    REDDIT_CLIENT_ID=  (선택사항, 주간 핫 뉴스용)
    REDDIT_CLIENT_SECRET=  (선택사항, 주간 핫 뉴스용)
    ```
@@ -152,6 +154,12 @@ Reddit r/wallstreetbets 데이터를 활용하려면:
    ```
    TELEGRAM_CHAT_IDS=-1001234567890,-1009876543210,-1008765432109
    ```
+   
+   예시 (송출 시간 커스터마이징):
+   ```
+   MORNING_TIME=07:30
+   EVENING_TIME=23:00
+   ```
 
 4. Deploy 완료 후 **즉시 12시간 뉴스 전송** (테스트)
 5. 테스트 완료 후 정기 스케줄 자동 시작
@@ -159,6 +167,8 @@ Reddit r/wallstreetbets 데이터를 활용하려면:
 > 💡 **배포 시 자동 테스트**: Railway에 배포하면 즉시 최근 12시간 뉴스를 분석하여 모든 채팅방에 전송합니다. 이를 통해 설정이 올바른지 바로 확인할 수 있습니다!
 
 > ⏱️ **채팅방 간격**: 여러 채팅방에 전송할 때 각 채팅방 사이에 5초 간격을 두어 안정적으로 전송합니다.
+
+> 🕐 **송출 시간 설정**: `MORNING_TIME`과 `EVENING_TIME` 환경 변수로 원하는 시간에 뉴스를 받을 수 있습니다. 설정하지 않으면 기본값(오전 8시, 오후 10시)으로 작동합니다.
 
 ### 6. Railway Volume 설정 (권장)
 
