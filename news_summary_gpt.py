@@ -75,8 +75,8 @@ class USStockNewsSummary:
         except Exception as e:
             print(f"⚠️ 전송 기록 저장 실패: {e}")
     
-    def _clean_old_history(self, history: Dict, days: int = 7) -> Dict:
-        """N일 이전 기록 삭제"""
+    def _clean_old_history(self, history: Dict, days: int = 1095) -> Dict:
+        """N일 이전 기록 삭제 (기본 3년 = 1095일)"""
         cutoff_date = datetime.now() - timedelta(days=days)
         cutoff_str = cutoff_date.isoformat()
         
@@ -90,7 +90,7 @@ class USStockNewsSummary:
         
         removed_count = len(history.get('sent_news', [])) - len(cleaned['sent_news'])
         if removed_count > 0:
-            print(f"🗑️ {removed_count}개의 오래된 기록 삭제 (7일 이상)")
+            print(f"🗑️ {removed_count}개의 오래된 기록 삭제 (3년 이상)")
         
         return cleaned
     
@@ -429,11 +429,11 @@ JSON만 출력하세요."""
         
         # 헤더 설정
         if time_of_day == 'morning':
-            header = "☀️ *미국주식 모닝브리프*"
-            subheader = "미국 장 마감 후 주요 뉴스"
+            header = "☀️ *아퀼라 미국주식 모닝 브리프*"
+            subheader = "미국 주식장 주요 일간 뉴스"
         else:
-            header = "🌙 *미국주식 이브닝브리프*"
-            subheader = "미국 장 시작 전후 주요 뉴스"
+            header = "🌙 *아퀼라 미국주식 이브닝 브리프*"
+            subheader = "미국 주식장 주요 일간 뉴스"
         
         # 한국 시간 (KST = UTC+9)
         kst = timezone(timedelta(hours=9))
