@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 """
 해외주식 뉴스 자동 전송 스케줄러
-- 평일: 오전 7시, 오후 10시 30분 (하루 2회)
-- 토요일: 오전 7시만 (하루 1회)
-- 일요일: 오전 7시 + 주간 핫 TOP 10 (특별판)
+- 매일 오전 8시 (모닝브리프)
+- 매일 오후 10시 (이브닝브리프)
+- 일요일: 주간 핫 TOP 10 추가
+- 매월 1일: 월간 핫 TOP 10 추가
 
-섬머타임 자동 반영:
-- 섬머타임(3-11월): 한국 시간 - 13시간 = 미국 동부
-- 동절기(11-3월): 한국 시간 - 14시간 = 미국 동부
+한국시간(KST) 고정, 섬머타임 고려 안 함
 """
 
 import schedule
@@ -42,16 +41,10 @@ def is_first_of_month():
     return datetime.now().day == 1
 
 def send_morning_news():
-    """오전 7시 (KST) - 미국 장 마감 후 뉴스"""
+    """오전 8시 (KST) - 모닝브리프"""
     print(f"\n{'='*60}")
-    print(f"☀️ 오전 7시 미국주식 모닝브리프 전송 시작")
+    print(f"☀️ 오전 8시 미국주식 모닝브리프 전송 시작")
     print(f"   시각: {datetime.now().strftime('%Y-%m-%d %H:%M:%S KST')}")
-    
-    if is_weekend():
-        print(f"   📅 주말 특별판")
-    else:
-        print(f"   📅 평일")
-    
     print(f"   내용: 미국 장 마감 후 주요 뉴스")
     print(f"{'='*60}\n")
     
@@ -79,18 +72,9 @@ def send_morning_news():
         send_monthly_hot_news()
 
 def send_evening_news():
-    """오후 10시 30분 (KST) - 미국 장 시작 전후 뉴스 (평일만)"""
-    
-    # 주말이면 전송하지 않음
-    if is_weekend():
-        print(f"\n{'='*60}")
-        print(f"🌙 오후 10시 30분 - 주말이므로 이브닝브리프 생략")
-        print(f"   시각: {datetime.now().strftime('%Y-%m-%d %H:%M:%S KST')}")
-        print(f"{'='*60}\n")
-        return
-    
+    """오후 10시 (KST) - 이브닝브리프"""
     print(f"\n{'='*60}")
-    print(f"🌙 오후 10시 30분 미국주식 이브닝브리프 전송 시작")
+    print(f"🌙 오후 10시 미국주식 이브닝브리프 전송 시작")
     print(f"   시각: {datetime.now().strftime('%Y-%m-%d %H:%M:%S KST')}")
     print(f"   내용: 미국 장 시작 전후 주요 뉴스")
     print(f"{'='*60}\n")
@@ -372,21 +356,14 @@ def main():
         sys.exit(1)
     
     print("🤖 해외주식 뉴스 봇 스케줄러 시작")
-    print(f"⏰ 예정된 전송 시간 (한국시간 기준):")
-    print(f"   📅 평일:")
-    print(f"      - 오전 7시: 미국 장 마감 후 뉴스")
-    print(f"        (미국 동부: 섬머타임 시 오후 6시 / 동절기 시 오후 5시)")
-    print(f"      - 오후 10시 30분: 미국 장 시작 전후 뉴스")
-    print(f"        (미국 동부: 섬머타임 시 오전 9시 30분 / 동절기 시 오전 8시 30분)")
-    print(f"   📅 토요일:")
-    print(f"      - 오전 7시만: 주말 뉴스 요약")
-    print(f"   📅 일요일:")
-    print(f"      - 오전 7시: 주말 뉴스 요약")
-    print(f"      - 오전 7시 직후: 🔥 주간 핫 TOP 10 (GPT-4o)")
-    print(f"   📅 매월 1일:")
-    print(f"      - 오전 7시: 일반 뉴스")
-    print(f"      - 오전 7시 직후: 🔥 주간 핫 TOP 10 (GPT-4o) [일요일인 경우]")
-    print(f"      - 오전 7시 직후: 📅 월간 핫 TOP 10 (GPT-4o)")
+    print(f"⏰ 예정된 전송 시간 (한국시간 KST 고정):")
+    print(f"   📅 매일:")
+    print(f"      - 오전 8시: 모닝브리프 (미국 장 마감 후 뉴스)")
+    print(f"      - 오후 10시: 이브닝브리프 (미국 장 시작 전후 뉴스)")
+    print(f"   📅 일요일 추가:")
+    print(f"      - 오전 8시 직후: 🔥 주간 핫 TOP 10 (GPT-4o)")
+    print(f"   📅 매월 1일 추가:")
+    print(f"      - 오전 8시 직후: 📅 월간 핫 TOP 10 (GPT-4o)")
     print(f"\n현재 시각: {datetime.now().strftime('%Y-%m-%d %H:%M:%S KST')}")
     print(f"오늘: {['월요일', '화요일', '수요일', '목요일', '금요일', '토요일', '일요일'][datetime.now().weekday()]}")
     print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
@@ -400,12 +377,12 @@ def main():
         print("⚠️ Reddit API 미설정 - WSB 분석 비활성화 (선택사항)")
     print()
     
-    # 스케줄 등록 - 한국시간 기준
-    # 매일 오전 7시 (평일+주말, 일요일은 주간 핫 뉴스도 추가)
-    schedule.every().day.at("07:00").do(send_morning_news)
+    # 스케줄 등록 - 한국시간(KST) 고정
+    # 매일 오전 8시 (모닝브리프)
+    schedule.every().day.at("08:00").do(send_morning_news)
     
-    # 매일 오후 10시 30분 (함수 내부에서 주말 체크)
-    schedule.every().day.at("22:30").do(send_evening_news)
+    # 매일 오후 10시 (이브닝브리프)
+    schedule.every().day.at("22:00").do(send_evening_news)
     
     print("✅ 스케줄 등록 완료. 대기 중...\n")
     
